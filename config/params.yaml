@@ -1,0 +1,4 @@
+odom_topic: "/odom"
+command_topic: "/drive"
+lookahead_distance: 1.5
+max_velocity: 3.0
