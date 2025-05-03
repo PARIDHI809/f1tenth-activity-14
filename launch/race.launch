@@ -1,10 +1,13 @@
 <launch>
-  <!-- Load parameters -->
+  <!-- load params, similar to assign 5 -->
   <rosparam command="load" file="$(find f1tenth_racing)/config/params.yaml" />
   
-  <!-- Launch the controller node -->
+  <!-- launch ctrller node -->
   <node pkg="f1tenth_racing" type="pure_pursuit_controller.py" name="pure_pursuit_controller" output="screen">
     <param name="odom_topic" value="$(arg odom_topic)" />
     <param name="command_topic" value="$(arg command_topic)" />
   </node>
+  
+  <!-- path in RViz -->
+  <node pkg="rviz" type="rviz" name="rviz" args="-d $(find f1tenth_racing)/config/race_view.rviz" if="$(arg visualize)" />
 </launch>

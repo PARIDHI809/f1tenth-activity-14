@@ -1,4 +1,16 @@
-odom_topic: "/odom"
+# vehicle params
+wheelbase: 0.33
+max_steering_angle: 0.4  # radians (~23 degrees)
+
+# ctrl params
+lookahead_distance: 1.5  # base lookahead
+max_velocity: 3.0  # max vel
+min_velocity: 1.0  # min vel
+
+odom_topic: "/odom" # topic names
 command_topic: "/drive"
-lookahead_distance: 1.5
-max_velocity: 3.0
+scan_topic: "/scan"
+
+use_obstacle_avoidance: true # racing params
+obstacle_threshold: 1.0
+obstacle_weight: 0.4
