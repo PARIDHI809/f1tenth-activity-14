@@ -423,7 +423,43 @@ class PurePursuitController:
                 return True
         return False
     
-    
+    def control_loop(self, event):
+        """main ctrl loop for veh"""
+        if not self.race_started or self.race_finished:
+            if not self.race_started: # send stop cmd
+                drive_msg = AckermannDriveStamped()
+                drive_msg.header.stamp = rospy.Time.now()
+                drive_msg.drive.speed = 0.0
+                drive_msg.drive.steering_angle = 0.0
+                self.drive_pub.publish(drive_msg)
+            return
+        
+        if self.lap_start_time is not None: # update curr lap time
+            self.current_lap_time = (rospy.Time.now() - self.lap_start_time).to_sec()
+        lookahead_x, lookahead_y, lookahead_idx = self.find_lookahead_point() 
+        steering_angle = self.calculate_steering_angle(lookahead_x, lookahead_y) # calc pure pursuit steer angle
+        obstacle_steering = self.check_obstacles() # add obst avoidance
+        final_steering = steering_angle + obstacle_steering
+        final_steering = np.clip(final_steering, -self.max_steering_angle, self.max_steering_angle)
+        target_velocity = self.velocity_profile[lookahead_idx]
+        
+        # adj vel based on steer angle, more steering = slower speed
+        steering_factor = 1.0 - abs(final_steering) / self.max_steering_angle * 0.5
+        velocity = target_velocity * steering_factor
+        if self.check_for_collision(): # coll check
+            velocity = self.min_velocity / 2.0  # slow on coll
+        drive_msg = AckermannDriveStamped() # create and publish drive msg
+        drive_msg.header.stamp = rospy.Time.now()
+        drive_msg.header.frame_id = "base_link"
+        drive_msg.drive.steering_angle = final_steering
+        drive_msg.drive.speed = velocity
+        
+        self.drive_pub.publish(drive_msg)
+        if event.last_real is not None and (event.current_real - event.last_real).to_sec() >= 1.0: # publish wayp visual occassionally
+            self.marker_pub.publish(self.waypoint_markers)
+            rospy.loginfo(f"Current lap time: {self.current_lap_time:.2f}s, " # log prog
+                         f"Checkpoints: {len(self.passed_checkpoints)}/{len(self.checkpoints)}, "
+                         f"Collisions: {self.collision_count}")
 
 if __name__ == '__main__':
     try:
